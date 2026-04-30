@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance - NusaDMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-primary: #8B2323;
+            --color-primary-hover: #6E1C1C;
+            --color-accent: #D4AF37;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
+        <div class="h-18 flex items-center px-6 border-b border-gray-200 gap-3 shrink-0">
+            <i class='bx bxs-buildings text-primary text-3xl'></i>
+            <h2 class="text-xl font-bold text-primary tracking-tight">NusaDMS</h2>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-grid-alt text-2xl'></i> Dasbor
+            </a>
+            <a href="buat-laporan.html" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-wrench text-2xl'></i> Pelaporan
+            </a>
+            <a href="inspeksi-kamar.html" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent"><i class='bx bx-check-shield text-2xl'></i> Inspeksi Kamar</a>
+            <a href="maintenance.html" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors bg-red-50 text-primary border-l-4 border-primary">
+                <i class='bx bx-calendar-event text-2xl text-accent'></i> Maintenance
+            </a>
+            <a href="riwayat.html" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-history text-2xl'></i> Riwayat & Laporan
+            </a>
+            <a href="pengaturan.html" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-user-circle text-2xl'></i> Pengaturan User
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="h-18 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
+            <div class="flex items-center bg-gray-50 rounded-full px-5 py-2.5 w-80 border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-red-100 transition-all">
+                <i class='bx bx-search text-gray-400 text-xl mr-3'></i>
+                <input type="text" placeholder="Cari ID laporan, lokasi..." class="bg-transparent border-none outline-none w-full text-sm text-gray-700">
+            </div>
+            <div class="flex items-center gap-6">
+                <button class="relative text-gray-500 hover:scale-110 transition-transform">
+                    <i class='bx bx-bell text-2xl'></i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
+                </button>
+                <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-lg">A</div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold">Andi Setiawan</span>
+                        <span class="text-xs text-gray-500">Supervisor</span>
+                    </div>
+                    <i class='bx bx-chevron-down text-gray-400 text-xl'></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <main class="flex-1 p-8 overflow-y-auto">
+            <!-- PAGE CONTENT START -->
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Antrean Maintenance</h1>
+                    <p class="text-sm text-gray-500 mt-1">Daftar tiket pending untuk persetujuan Supervisor dan tugas perbaikan Teknisi.</p>
+                </div>
+            </div>
+
+            <div class="space-y-6 max-w-5xl">
+                
+                <!-- Ticket 1: Supervisor View (Menunggu Approval) -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row relative">
+                    <div class="w-full md:w-64 bg-gray-50 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-200 shrink-0 relative">
+                        <span class="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm">
+                            <i class='bx bx-time'></i> Menunggu Approval
+                        </span>
+                        
+                        <div class="mt-8">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">ID Dokumen</h4>
+                            <p class="font-bold text-gray-800 text-lg">#RPT-001</p>
+                            <div class="mt-4">
+                                <span class="text-xs font-semibold text-gray-500">Pelapor:</span>
+                                <p class="text-sm text-gray-700 font-medium">Rina (Housekeeping)</p>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-xs font-semibold text-gray-500">Tanggal:</span>
+                                <p class="text-sm text-gray-700 font-medium">29 Apr 2026</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <!-- SLA Badge (Overdue) -->
+                        <div class="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm animate-pulse">
+                            <i class='bx bx-alarm-exclamation text-lg'></i> Overdue: -15 Menit
+                        </div>
+
+                        <div class="mt-4 md:mt-0">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">Kamar 302 - AC Tidak Dingin</h3>
+                                    <span class="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">Urgensi: Sedang</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4">
+                                "Tamu komplain AC tidak dingin dan meneteskan air. Harap segera dicek dan dibersihkan filternya."
+                            </p>
+                            <button class="text-sm font-semibold text-primary hover:text-primary-hover flex items-center gap-1">
+                                <i class='bx bx-image-alt'></i> Lihat Foto Kerusakan
+                            </button>
+                        </div>
+                        
+                        <!-- Supervisor Actions -->
+                        <div class="mt-6 pt-5 border-t border-gray-100 flex flex-wrap gap-4 items-center bg-white">
+                            <div class="flex-1 min-w-[200px]">
+                                <select class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary">
+                                    <option value="">-- Pilih Teknisi Bertugas --</option>
+                                    <option value="joko">Teknisi Joko</option>
+                                    <option value="bambang">Teknisi Bambang</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="alert('Laporan Ditolak.');" class="px-5 py-2 border border-red-200 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-all text-sm">
+                                    <i class='bx bx-x'></i> Tolak
+                                </button>
+                                <button onclick="alert('Tiket Disetujui & Ditugaskan ke Teknisi!');" class="px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all text-sm shadow-sm">
+                                    <i class='bx bx-check-double'></i> Setujui Perbaikan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket 2: Technician View (Perbaikan Berjalan) -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row relative">
+                    <div class="w-full md:w-64 bg-gray-50 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-200 shrink-0 relative">
+                        <span class="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 shadow-sm">
+                            <i class='bx bx-loader-circle'></i> Perbaikan Berjalan
+                        </span>
+                        
+                        <div class="mt-8">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">ID Dokumen</h4>
+                            <p class="font-bold text-gray-800 text-lg">#RPT-002</p>
+                            <div class="mt-4">
+                                <span class="text-xs font-semibold text-gray-500">Ditugaskan Kepada:</span>
+                                <p class="text-sm text-gray-700 font-bold">Anda (Teknisi)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <!-- SLA Badge (On Time) -->
+                        <div class="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 shadow-sm">
+                            <i class='bx bx-stopwatch text-lg'></i> Sisa waktu: 45 Menit
+                        </div>
+
+                        <div class="mt-4 md:mt-0">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">Lobby Utama - Lampu Mati</h3>
+                                    <span class="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">Urgensi: Darurat</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4">
+                                "Lampu chandelier di tengah lobby utama mati sebagian. Mengganggu estetika penerimaan tamu."
+                            </p>
+                        </div>
+                        
+                        <!-- Technician Form -->
+                        <div class="mt-2 pt-4 border-t border-gray-100">
+                            <h4 class="text-sm font-bold text-gray-800 mb-3">Form Penyelesaian Tugas</h4>
+                            <div class="space-y-4">
+                                <textarea rows="2" placeholder="Catatan Teknisi (Misal: Bohlam telah diganti)..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-all"></textarea>
+                                
+                                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                                    <div class="flex-1 w-full">
+                                        <button class="w-full px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2">
+                                            <i class='bx bx-camera text-xl'></i> Upload Foto Bukti Perbaikan
+                                        </button>
+                                    </div>
+                                    <div class="flex-1 w-full">
+                                        <button onclick="window.location.href='penyelesaian.html';" class="w-full px-5 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover transition-all text-sm shadow-md shadow-red-900/20 flex items-center justify-center gap-2">
+                                            <i class='bx bx-task text-lg'></i> Lanjut Penyelesaian
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- PAGE CONTENT END -->
+        </main>
+    </div>
+</body>
+</html>
+
