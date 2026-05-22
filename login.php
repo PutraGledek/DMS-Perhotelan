@@ -1,0 +1,160 @@
+<?php
+require_once 'config.php';
+
+// Jika sudah login, langsung lempar ke dashboard
+if (isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if (empty($username) || empty($password)) {
+        $error = "Email/Username dan Kata Sandi wajib diisi.";
+    } else {
+        // Cari user berdasarkan email atau NIK
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR nik = ? LIMIT 1");
+        $stmt->execute([$username, $username]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify($password, $user['password_hash'])) {
+            // Jika berhasil login, simpan data ke session
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['nama'] = $user['nama_lengkap'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['nik'] = $user['nik'];
+            
+            // Catat ke audit log (opsional tapi disarankan untuk DMS)
+            $stmtLog = $pdo->prepare("INSERT INTO audit_logs (user_id, aksi, deskripsi_log, ip_address) VALUES (?, ?, ?, ?)");
+            $stmtLog->execute([$user['id'], 'LOGIN', 'User berhasil masuk ke sistem.', $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1']);
+
+            // Lempar ke dashboard
+            header("Location: index.php");
+            exit;
+        } else {
+            $error = "Email/Username atau Kata Sandi salah.";
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GrandVault Nusantara</title>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-primary: #8B2323;
+            --color-primary-hover: #6E1C1C;
+            --color-accent: #D4AF37;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 flex h-screen overflow-hidden">
+    <!-- Left Panel: Branding -->
+    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary-hover relative items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 bg-black/10"></div>
+        <div class="relative z-10 flex flex-col items-center text-center px-12">
+            <div class="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-6 shadow-xl">
+                <i class='bx bxs-institution text-5xl'></i>
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-2">GrandVault</h1>
+            <h2 class="text-xl tracking-[0.3em] font-medium text-accent uppercase mb-6">Nusantara</h2>
+            <p class="text-red-100/80 max-w-md text-lg leading-relaxed">
+                Sistem Manajemen Dokumen Terpadu untuk Pengelolaan Pemeliharaan Hotel yang Efisien dan Aman.
+            </p>
+        </div>
+        <!-- Decorative elements -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-3xl"></div>
+            <div class="absolute bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-3xl"></div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
+        <div class="w-full max-w-md">
+            <div class="lg:hidden flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white">
+                    <i class='bx bxs-institution text-2xl'></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 leading-none">GrandVault</h2>
+                    <span class="text-xs uppercase font-bold text-primary tracking-widest">Nusantara</span>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Selamat Datang</h2>
+                <p class="text-gray-500 mt-2">Silakan masuk ke akun Anda untuk melanjutkan.</p>
+            </div>
+
+            <?php if ($error): ?>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-6">
+                <div class="flex items-start">
+                    <i class='bx bx-x-circle text-red-500 text-xl mt-0.5 mr-3'></i>
+                    <div>
+                        <h4 class="text-sm font-bold text-red-800">Login Gagal</h4>
+                        <p class="text-xs text-red-600 mt-1"><?= htmlspecialchars($error) ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <form action="" method="POST" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Email / Username</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class='bx bx-user text-gray-400 text-xl'></i>
+                        </div>
+                        <input type="text" id="username" name="username" class="block w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none" placeholder="Masukkan email atau username" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Kata Sandi</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class='bx bx-lock-alt text-gray-400 text-xl'></i>
+                        </div>
+                        <input type="password" id="password" name="password" class="block w-full pl-11 pr-11 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none" placeholder="Masukkan kata sandi" required>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember" class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary">
+                        <label for="remember" class="ml-2 text-sm font-medium text-gray-600">Ingat Saya</label>
+                    </div>
+                    <a href="#" class="text-sm font-semibold text-primary hover:text-primary-hover">Lupa sandi?</a>
+                </div>
+
+                <button type="submit" class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all hover:-translate-y-0.5">
+                    <i class='bx bx-log-in text-lg'></i> Masuk ke Sistem
+                </button>
+            </form>
+
+            <div class="mt-8 border-t border-gray-100 pt-6">
+                <p class="text-center text-sm text-gray-500">
+                    Membutuhkan akses baru tingkat manajemen? <br>
+                    <a href="register.php" class="inline-block mt-2 font-semibold text-primary hover:text-primary-hover">
+                        <i class='bx bx-shield-plus'></i> Menuju Portal Registrasi Manajer
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

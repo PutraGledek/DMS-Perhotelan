@@ -1,0 +1,204 @@
+<?php
+require_once 'config.php';
+requireLogin();
+
+// Hitung Statistik
+$stmtAktif = $pdo->query("SELECT COUNT(*) FROM maintenance_reports WHERE status IN ('menunggu_approval', 'disetujui', 'dikerjakan')");
+$laporanAktif = $stmtAktif->fetchColumn();
+
+$stmtMenunggu = $pdo->query("SELECT COUNT(*) FROM maintenance_reports WHERE status = 'menunggu_approval'");
+$menungguApproval = $stmtMenunggu->fetchColumn();
+
+$stmtSelesai = $pdo->query("SELECT COUNT(*) FROM maintenance_reports WHERE status = 'selesai' AND DATE(waktu_selesai) = DATE('now')");
+$selesaiHariIni = $stmtSelesai->fetchColumn();
+
+// Ambil Feed Aktivitas (5 terbaru)
+$stmtAktivitas = $pdo->query("
+    SELECT a.*, u.nama_lengkap, u.role 
+    FROM audit_logs a 
+    JOIN users u ON a.user_id = u.id 
+    ORDER BY a.waktu_kejadian DESC 
+    LIMIT 5
+");
+$aktivitas = $stmtAktivitas->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor - GrandVault Nusantara</title>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-primary: #8B2323;
+            --color-primary-hover: #6E1C1C;
+            --color-accent: #D4AF37;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
+        <div class="h-18 flex items-center px-6 border-b border-gray-200 gap-3 shrink-0">
+            <div
+                class="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-hover text-white shadow-md">
+                <i class='bx bxs-institution text-2xl'></i>
+            </div>
+            <div class="flex flex-col">
+                <h2 class="text-lg font-extrabold text-gray-800 tracking-tight leading-none">GrandVault</h2>
+                <span class="text-[10px] uppercase font-bold text-primary tracking-widest mt-0.5">Nusantara</span>
+            </div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <a href="index.php"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors bg-red-50 text-primary">
+                <i class='bx bx-grid-alt text-2xl'></i> Dasbor
+            </a>
+            <a href="buat-laporan.php"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-wrench text-2xl'></i> Pelaporan
+            </a>
+            <a href="inspeksi-kamar.php"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent"><i
+                    class='bx bx-check-shield text-2xl'></i> Inspeksi Kamar</a>
+            <a href="maintenance.php"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-calendar-event text-2xl'></i> Maintenance
+            </a>
+            <a href="riwayat.php"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-history text-2xl'></i> Riwayat & Laporan
+            </a>
+            <a href="pengaturan.php"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
+                <i class='bx bx-user-circle text-2xl'></i> Pengaturan User
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="h-18 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
+            <div
+                class="flex items-center bg-gray-50 rounded-full px-5 py-2.5 w-80 border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-red-100 transition-all">
+                <i class='bx bx-search text-gray-400 text-xl mr-3'></i>
+                <input type="text" placeholder="Cari ID laporan, lokasi..."
+                    class="bg-transparent border-none outline-none w-full text-sm text-gray-700">
+            </div>
+            <div class="flex items-center gap-6">
+                <button class="relative text-gray-500 hover:scale-110 transition-transform">
+                    <i class='bx bx-bell text-2xl'></i>
+                    <span
+                        class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
+                </button>
+                <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
+                    <div
+                        class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-lg">
+                        A</div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold"><?= htmlspecialchars($_SESSION['nama']) ?></span>
+                        <span class="text-xs text-gray-500 uppercase"><?= htmlspecialchars($_SESSION['role']) ?></span>
+                    </div>
+                    <i class='bx bx-chevron-down text-gray-400 text-xl'></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <main class="flex-1 p-8 overflow-y-auto">
+            <!-- PAGE CONTENT START -->
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Ringkasan Sistem</h1>
+                    <p class="text-sm text-gray-500 mt-1">Pantau status laporan dan operasional maintenance hari ini.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="inspeksi-kamar.php"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 hover:text-primary hover:border-primary transition-all shadow-sm">
+                        <i class='bx bx-check-shield text-lg'></i> Inspeksi Kamar
+                    </a>
+                    <a href="buat-laporan.php"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-hover hover:-translate-y-0.5 transition-all shadow-md shadow-red-900/20">
+                        <i class='bx bx-plus text-lg'></i> Laporan Baru
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div
+                    class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:shadow-md transition-all">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-3xl">
+                        <i class='bx bx-file'></i>
+                    </div>
+                    <div>
+                        <h3 class="text-3xl font-bold text-gray-800"><?= $laporanAktif ?></h3>
+                        <p class="text-sm text-gray-500 font-medium mt-1">Laporan Aktif</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:shadow-md transition-all">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-yellow-100 text-yellow-600 flex items-center justify-center text-3xl">
+                        <i class='bx bx-time-five'></i>
+                    </div>
+                    <div>
+                        <h3 class="text-3xl font-bold text-gray-800"><?= $menungguApproval ?></h3>
+                        <p class="text-sm text-gray-500 font-medium mt-1">Menunggu Approval</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:shadow-md transition-all">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-3xl">
+                        <i class='bx bx-check-circle'></i>
+                    </div>
+                    <div>
+                        <h3 class="text-3xl font-bold text-gray-800"><?= $selesaiHariIni ?></h3>
+                        <p class="text-sm text-gray-500 font-medium mt-1">Selesai Hari Ini</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Activity Feed -->
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class='bx bx-pulse text-primary text-xl'></i> Live Activity Feed
+                </h3>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div class="space-y-6">
+                    <?php if (count($aktivitas) > 0): ?>
+                        <?php foreach ($aktivitas as $log): ?>
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                <i class='bx bx-pulse text-xl'></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-800"><span class="font-bold"><?= htmlspecialchars($log['nama_lengkap']) ?> (<?= htmlspecialchars($log['role']) ?>)</span>: <?= htmlspecialchars($log['deskripsi_log']) ?></p>
+                                <span class="text-xs text-gray-500 font-medium mt-1 inline-block"><?= htmlspecialchars($log['waktu_kejadian']) ?></span>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-sm text-gray-500">Belum ada aktivitas terekam.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <!-- PAGE CONTENT END -->
+        </main>
+    </div>
+</body>
+
+</html>
