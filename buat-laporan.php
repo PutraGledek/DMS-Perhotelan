@@ -45,78 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+$page_title = "Form Pelaporan - NusaDMS";
+require_once 'layout_header.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Pelaporan - NusaDMS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <style type="text/tailwindcss">
-        @theme {
-            --color-primary: #8B2323;
-            --color-primary-hover: #6E1C1C;
-            --color-accent: #D4AF37;
-        }
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
-        <div class="h-18 flex items-center px-6 border-b border-gray-200 gap-3 shrink-0">
-            <i class='bx bxs-buildings text-primary text-3xl'></i>
-            <h2 class="text-xl font-bold text-primary tracking-tight">NusaDMS</h2>
-        </div>
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <a href="index.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-grid-alt text-2xl'></i> Dasbor
-            </a>
-            <a href="buat-laporan.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors bg-red-50 text-primary border-l-4 border-primary">
-                <i class='bx bx-wrench text-2xl text-accent'></i> Pelaporan
-            </a>
-            <a href="inspeksi-kamar.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent"><i class='bx bx-check-shield text-2xl'></i> Inspeksi Kamar</a>
-            <a href="maintenance.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-calendar-event text-2xl'></i> Maintenance
-            </a>
-            <a href="riwayat.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-history text-2xl'></i> Riwayat & Laporan
-            </a>
-            <a href="pengaturan.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-user-circle text-2xl'></i> Pengaturan User
-            </a>
-        </nav>
-    </aside>
-
-    <!-- Main Wrapper -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Header -->
-        <header class="h-18 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
-            <div class="flex items-center bg-gray-50 rounded-full px-5 py-2.5 w-80 border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-red-100 transition-all">
-                <i class='bx bx-search text-gray-400 text-xl mr-3'></i>
-                <input type="text" placeholder="Cari ID laporan, lokasi..." class="bg-transparent border-none outline-none w-full text-sm text-gray-700">
-            </div>
-            <div class="flex items-center gap-6">
-                <button class="relative text-gray-500 hover:scale-110 transition-transform">
-                    <i class='bx bx-bell text-2xl'></i>
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
-                </button>
-                <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-lg">A</div>
-                    <div class="flex flex-col">
-                        <span class="text-sm font-semibold"><?= htmlspecialchars($_SESSION['nama']) ?></span>
-                        <span class="text-xs text-gray-500 uppercase"><?= htmlspecialchars($_SESSION['role']) ?></span>
-                    </div>
-                    <i class='bx bx-chevron-down text-gray-400 text-xl'></i>
-                </div>
-            </div>
-        </header>
-
-        <!-- Content Area -->
-        <main class="flex-1 p-8 overflow-y-auto">
             <!-- PAGE CONTENT START -->
             <div class="flex justify-between items-end mb-8">
                 <div>
@@ -193,8 +124,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
             </div>
             <!-- PAGE CONTENT END -->
-        </main>
-    </div>
-</body>
-</html>
-
+<?php require_once 'layout_footer.php'; ?>

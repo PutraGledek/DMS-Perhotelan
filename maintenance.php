@@ -10,51 +10,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $report_id = $_POST['report_id'] ?? '';
 
-    if ($action === 'approve') {
-        $teknisi_id = $_POST['teknisi_id'] ?? '';
-        if (empty($teknisi_id)) {
-            $error = "Pilih teknisi terlebih dahulu.";
-        } else {
-            $pdo->beginTransaction();
-            try {
-                // Update status laporan
-                $stmt = $pdo->prepare("UPDATE maintenance_reports SET status = 'dikerjakan' WHERE id_laporan = ?");
-                $stmt->execute([$report_id]);
-                
-                // Tambah penugasan
-                $stmt2 = $pdo->prepare("INSERT INTO ticket_assignments (report_id, teknisi_id, ditugaskan_oleh) VALUES (?, ?, ?)");
-                $stmt2->execute([$report_id, $teknisi_id, $_SESSION['user_id']]);
-                
-                // Log Audit
-                $stmt3 = $pdo->prepare("INSERT INTO audit_logs (user_id, aksi, target_tabel, target_id, deskripsi_log) VALUES (?, ?, ?, ?, ?)");
-                $stmt3->execute([$_SESSION['user_id'], 'APPROVE_REPORT', 'maintenance_reports', $report_id, "Menyetujui tiket dan menugaskan teknisi ID: $teknisi_id"]);
-                
-                $pdo->commit();
-                $success = "Tiket disetujui dan ditugaskan!";
-            } catch (Exception $e) {
-                $pdo->rollBack();
-                $error = "Terjadi kesalahan: " . $e->getMessage();
-            }
-        }
-    } elseif ($action === 'reject') {
-        $pdo->beginTransaction();
-        try {
-            $stmt = $pdo->prepare("UPDATE maintenance_reports SET status = 'ditolak' WHERE id_laporan = ?");
-            $stmt->execute([$report_id]);
-            
-            $stmt3 = $pdo->prepare("INSERT INTO audit_logs (user_id, aksi, target_tabel, target_id, deskripsi_log) VALUES (?, ?, ?, ?, ?)");
-            $stmt3->execute([$_SESSION['user_id'], 'REJECT_REPORT', 'maintenance_reports', $report_id, "Menolak tiket."]);
-            
-            $pdo->commit();
-            $success = "Tiket berhasil ditolak.";
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            $error = "Terjadi kesalahan: " . $e->getMessage();
-        }
-    } elseif ($action === 'complete') {
+    if ($action === 'complete') {
         $catatan = $_POST['catatan'] ?? '';
+        $qty_array = $_POST['qty'] ?? [];
+        
         $pdo->beginTransaction();
         try {
+            // Kumpulkan daftar barang yang digunakan (qty > 0)
+            $itemsToUse = [];
+            foreach ($qty_array as $id => $qty) {
+                $qty = (int)$qty;
+                if ($qty > 0) {
+                    $itemsToUse[$id] = $qty;
+                }
+            }
+
+            // Cek stok untuk semua barang sebelum memproses
+            if (!empty($itemsToUse)) {
+                $checkStmt = $pdo->prepare("SELECT nama_barang, stok_tersedia FROM inventory_items WHERE id = ?");
+                foreach ($itemsToUse as $id => $qty) {
+                    $checkStmt->execute([$id]);
+                    $itemData = $checkStmt->fetch();
+                    if (!$itemData) {
+                        throw new Exception("Barang tidak ditemukan.");
+                    }
+                    if ($itemData['stok_tersedia'] < $qty) {
+                        throw new Exception("Stok barang '{$itemData['nama_barang']}' tidak mencukupi! Diminta: {$qty}, Sisa: {$itemData['stok_tersedia']}");
+                    }
+                }
+                
+                // Proses pengurangan stok dan pencatatan
+                $updateStokStmt = $pdo->prepare("UPDATE inventory_items SET stok_tersedia = stok_tersedia - ? WHERE id = ?");
+                $insertUsageStmt = $pdo->prepare("INSERT INTO inventory_usage (report_id, item_id, jumlah_digunakan) VALUES (?, ?, ?)");
+                
+                foreach ($itemsToUse as $id => $qty) {
+                    $updateStokStmt->execute([$qty, $id]);
+                    $insertUsageStmt->execute([$report_id, $id, $qty]);
+                }
+            }
+        
             // Update laporan
             $stmt = $pdo->prepare("UPDATE maintenance_reports SET status = 'selesai', waktu_selesai = CURRENT_TIMESTAMP WHERE id_laporan = ?");
             $stmt->execute([$report_id]);
@@ -98,96 +92,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Ambil daftar tiket aktif
-$stmt = $pdo->query("
+// Ambil daftar tiket aktif (hanya yang sedang dikerjakan)
+$whereClause = "m.status = 'dikerjakan'";
+$params = [];
+
+if ($_SESSION['role'] === 'teknisi') {
+    // Teknisi hanya melihat tiket yang ditugaskan ke mereka
+    $whereClause .= " AND t.teknisi_id = ?";
+    $params[] = $_SESSION['user_id'];
+}
+
+$stmt = $pdo->prepare("
     SELECT m.*, u.nama_lengkap as pelapor, l.nama_lokasi 
     FROM maintenance_reports m 
     JOIN users u ON m.user_pelapor_id = u.id 
     JOIN locations l ON m.location_id = l.id 
-    WHERE m.status IN ('menunggu_approval', 'dikerjakan')
+    LEFT JOIN ticket_assignments t ON m.id_laporan = t.report_id
+    WHERE $whereClause
     ORDER BY m.waktu_lapor DESC
 ");
+$stmt->execute($params);
 $tickets = $stmt->fetchAll();
 
 // Ambil daftar teknisi
 $teknisiList = $pdo->query("SELECT id, nama_lengkap FROM users WHERE role = 'teknisi'")->fetchAll();
+
+// Ambil daftar barang untuk dropdown teknisi
+$inventoryItems = $pdo->query("SELECT id, nama_barang, stok_tersedia, satuan FROM inventory_items ORDER BY nama_barang ASC")->fetchAll();
+$page_title = "Maintenance - NusaDMS";
+require_once 'layout_header.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maintenance - NusaDMS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <style type="text/tailwindcss">
-        @theme {
-            --color-primary: #8B2323;
-            --color-primary-hover: #6E1C1C;
-            --color-accent: #D4AF37;
-        }
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
-        <div class="h-18 flex items-center px-6 border-b border-gray-200 gap-3 shrink-0">
-            <i class='bx bxs-buildings text-primary text-3xl'></i>
-            <h2 class="text-xl font-bold text-primary tracking-tight">NusaDMS</h2>
-        </div>
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <a href="index.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-grid-alt text-2xl'></i> Dasbor
-            </a>
-            <a href="buat-laporan.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-wrench text-2xl'></i> Pelaporan
-            </a>
-            <a href="inspeksi-kamar.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent"><i class='bx bx-check-shield text-2xl'></i> Inspeksi Kamar</a>
-            <a href="maintenance.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors bg-red-50 text-primary border-l-4 border-primary">
-                <i class='bx bx-calendar-event text-2xl text-accent'></i> Maintenance
-            </a>
-            <a href="riwayat.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-history text-2xl'></i> Riwayat & Laporan
-            </a>
-            <a href="pengaturan.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent">
-                <i class='bx bx-user-circle text-2xl'></i> Pengaturan User
-            </a>
-        </nav>
-    </aside>
-
-    <!-- Main Wrapper -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Header -->
-        <header class="h-18 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
-            <div class="flex items-center bg-gray-50 rounded-full px-5 py-2.5 w-80 border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-red-100 transition-all">
-                <i class='bx bx-search text-gray-400 text-xl mr-3'></i>
-                <input type="text" placeholder="Cari ID laporan, lokasi..." class="bg-transparent border-none outline-none w-full text-sm text-gray-700">
-            </div>
-            <div class="flex items-center gap-6">
-                <button class="relative text-gray-500 hover:scale-110 transition-transform">
-                    <i class='bx bx-bell text-2xl'></i>
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
-                </button>
-                <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-lg">A</div>
-                    <div class="flex flex-col">
-                        <span class="text-sm font-semibold"><?= htmlspecialchars($_SESSION['nama']) ?></span>
-                        <span class="text-xs text-gray-500 uppercase"><?= htmlspecialchars($_SESSION['role']) ?></span>
-                    </div>
-                    <i class='bx bx-chevron-down text-gray-400 text-xl'></i>
-                </div>
-            </div>
-        </header>
-
-        <!-- Content Area -->
-        <main class="flex-1 p-8 overflow-y-auto">
             <!-- PAGE CONTENT START -->
             <div class="flex justify-between items-end mb-8">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Antrean Maintenance</h1>
-                    <p class="text-sm text-gray-500 mt-1">Daftar tiket pending untuk persetujuan Supervisor dan tugas perbaikan Teknisi.</p>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Tugas Maintenance Saya</h1>
+                    <p class="text-sm text-gray-500 mt-1">Daftar tugas perbaikan yang sedang dikerjakan. Selesaikan tugas dan catat penggunaan barang di sini.</p>
                 </div>
             </div>
 
@@ -254,38 +193,30 @@ $teknisiList = $pdo->query("SELECT id, nama_lengkap FROM users WHERE role = 'tek
                                     </p>
                                 </div>
                                 
-                                <?php if ($ticket['status'] === 'menunggu_approval'): ?>
-                                    <!-- Supervisor Actions -->
-                                    <form action="" method="POST" class="mt-6 pt-5 border-t border-gray-100 flex flex-wrap gap-4 items-center bg-white">
-                                        <input type="hidden" name="report_id" value="<?= $ticket['id_laporan'] ?>">
-                                        <div class="flex-1 min-w-[200px]">
-                                            <select name="teknisi_id" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary">
-                                                <option value="">-- Pilih Teknisi Bertugas --</option>
-                                                <?php foreach ($teknisiList as $tek): ?>
-                                                    <option value="<?= $tek['id'] ?>"><?= htmlspecialchars($tek['nama_lengkap']) ?></option>
-                                                <?php endforeach; ?>
-                                                <?php if (empty($teknisiList)): ?>
-                                                    <!-- Fallback jika belum ada teknisi di DB -->
-                                                    <option value="<?= $_SESSION['user_id'] ?>">Tugaskan ke Saya (<?= htmlspecialchars($_SESSION['nama']) ?>)</option>
-                                                <?php endif; ?>
-                                            </select>
-                                        </div>
-                                        <div class="flex gap-3">
-                                            <button type="submit" name="action" value="reject" class="px-5 py-2 border border-red-200 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-all text-sm">
-                                                <i class='bx bx-x'></i> Tolak
-                                            </button>
-                                            <button type="submit" name="action" value="approve" class="px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all text-sm shadow-sm">
-                                                <i class='bx bx-check-double'></i> Setujui & Tugaskan
-                                            </button>
-                                        </div>
-                                    </form>
-                                <?php elseif ($ticket['status'] === 'dikerjakan'): ?>
                                     <!-- Technician Form -->
                                     <form action="" method="POST" enctype="multipart/form-data" class="mt-2 pt-4 border-t border-gray-100">
                                         <input type="hidden" name="report_id" value="<?= $ticket['id_laporan'] ?>">
                                         <h4 class="text-sm font-bold text-gray-800 mb-3">Form Penyelesaian Tugas</h4>
                                         <div class="space-y-4">
                                             <textarea name="catatan" required rows="2" placeholder="Catatan Teknisi (Misal: Bohlam telah diganti)..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-all"></textarea>
+                                            
+                                            <!-- Pilihan Barang / Stok (Multiple) -->
+                                            <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                                                <label class="text-xs font-semibold text-gray-600 block mb-3 border-b border-blue-200 pb-2">Barang Digunakan (Isi jumlah pada barang yang dipakai)</label>
+                                                <div class="max-h-48 overflow-y-auto pr-2 space-y-2">
+                                                    <?php foreach ($inventoryItems as $inv): ?>
+                                                        <div class="flex items-center justify-between bg-white p-2 border border-gray-200 rounded shadow-sm">
+                                                            <div class="flex-1">
+                                                                <div class="text-sm font-medium text-gray-800"><?= htmlspecialchars($inv['nama_barang']) ?></div>
+                                                                <div class="text-xs text-gray-500">Sisa stok: <span class="font-bold <?= $inv['stok_tersedia'] > 0 ? 'text-green-600' : 'text-red-500' ?>"><?= $inv['stok_tersedia'] ?></span> <?= htmlspecialchars($inv['satuan']) ?></div>
+                                                            </div>
+                                                            <div class="w-20 shrink-0 ml-3">
+                                                                <input type="number" name="qty[<?= $inv['id'] ?>]" min="0" max="<?= $inv['stok_tersedia'] ?>" placeholder="Qty" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-center focus:border-primary focus:outline-none <?= $inv['stok_tersedia'] == 0 ? 'bg-gray-100 cursor-not-allowed' : 'bg-white' ?>" <?= $inv['stok_tersedia'] == 0 ? 'disabled' : '' ?>>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
                                             
                                             <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
                                                 <div class="flex-1 w-full relative">
@@ -302,15 +233,10 @@ $teknisiList = $pdo->query("SELECT id, nama_lengkap FROM users WHERE role = 'tek
                                             </div>
                                         </div>
                                     </form>
-                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
             <!-- PAGE CONTENT END -->
-        </main>
-    </div>
-</body>
-</html>
-
+<?php require_once 'layout_footer.php'; ?>
