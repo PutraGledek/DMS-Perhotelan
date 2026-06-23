@@ -35,11 +35,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$nomor_tiket, $_SESSION['user_id'], $location_id, $judul_masalah, $deskripsi, $urgensi]);
             $report_id = $pdo->lastInsertId();
 
+            // Handle file upload untuk foto_bukti
+            $uploadMsg = '';
+            if (isset($_FILES['foto_bukti']) && $_FILES['foto_bukti']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/uploads/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+                
+                $fileExtension = strtolower(pathinfo($_FILES['foto_bukti']['name'], PATHINFO_EXTENSION));
+                $fileName = time() . '_' . substr(md5(uniqid()), 0, 8) . '.' . $fileExtension;
+                $targetFile = $uploadDir . $fileName;
+                
+                $allowedTypes = ['jpg', 'png', 'jpeg', 'gif', 'webp'];
+                
+                if (in_array($fileExtension, $allowedTypes)) {
+                    if (move_uploaded_file($_FILES['foto_bukti']['tmp_name'], $targetFile)) {
+                        $pathPenyimpanan = 'uploads/' . $fileName;
+                        $stmtDoc = $pdo->prepare("INSERT INTO documents (report_id, nama_file, tipe_file, path_penyimpanan, diunggah_oleh) VALUES (?, ?, ?, ?, ?)");
+                        $stmtDoc->execute([$report_id, $_FILES['foto_bukti']['name'], 'foto_kerusakan', $pathPenyimpanan, $_SESSION['user_id']]);
+                    } else {
+                        $uploadMsg = " (Namun foto gagal disimpan ke server)";
+                    }
+                } else {
+                    $uploadMsg = " (Namun format foto tidak didukung)";
+                }
+            } elseif (isset($_FILES['foto_bukti']) && $_FILES['foto_bukti']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $uploadMsg = " (Namun terjadi error saat upload foto)";
+            }
+
             // Log Aktivitas
             $stmtLog = $pdo->prepare("INSERT INTO audit_logs (user_id, aksi, target_tabel, target_id, deskripsi_log) VALUES (?, ?, ?, ?, ?)");
             $stmtLog->execute([$_SESSION['user_id'], 'CREATE_REPORT', 'maintenance_reports', $report_id, "Membuat laporan baru tiket $nomor_tiket."]);
 
-            $success = "Laporan Kerusakan berhasil dikirim dan masuk ke antrean DMS! ID Laporan: $nomor_tiket";
+            $success = "Laporan Kerusakan berhasil dikirim dan masuk ke antrean DMS! ID Laporan: $nomor_tiket" . $uploadMsg;
         } catch (PDOException $e) {
             $error = "Terjadi kesalahan: " . $e->getMessage();
         }

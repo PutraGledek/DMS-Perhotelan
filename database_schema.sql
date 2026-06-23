@@ -111,25 +111,4 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
     is_used INTEGER DEFAULT 0
 );
 
--- =======================================================
--- 6. TABEL MANAJEMEN STOK (INVENTORY)
--- =======================================================
 
-CREATE TABLE IF NOT EXISTS inventory_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    kode_barang TEXT UNIQUE NOT NULL,
-    nama_barang TEXT NOT NULL,
-    stok_tersedia INTEGER NOT NULL DEFAULT 0,
-    satuan TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS inventory_usage (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    report_id INTEGER NOT NULL,
-    item_id INTEGER NOT NULL,
-    jumlah_digunakan INTEGER NOT NULL,
-    waktu_penggunaan DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (report_id) REFERENCES maintenance_reports(id_laporan) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE RESTRICT
-);

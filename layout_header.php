@@ -7,8 +7,8 @@ if (session_status() === PHP_SESSION_NONE) {
 // Set variabel default jika tidak ada
 $page_title = $page_title ?? 'GrandVault Nusantara DMS';
 $current_page = basename($_SERVER['PHP_SELF']);
-$user_role = $_SESSION['role'] ?? 'staff';
-$user_name = $_SESSION['nama'] ?? 'Pengguna';
+$user_role = $custom_role ?? $_SESSION['role'] ?? 'staff';
+$user_name = $custom_name ?? $_SESSION['nama'] ?? 'Pengguna';
 $user_initial = strtoupper(substr($user_name, 0, 1));
 ?>
 <!DOCTYPE html>
@@ -72,9 +72,6 @@ $user_initial = strtoupper(substr($user_name, 0, 1));
             </a>
             <a href="riwayat.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors <?= $current_page == 'riwayat.php' || $current_page == 'detail-track.php' || $current_page == 'surat-tugas.php' ? 'bg-red-50 text-primary border-l-4 border-primary' : 'text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent' ?>">
                 <i class='bx bx-history text-2xl <?= $current_page == 'riwayat.php' || $current_page == 'detail-track.php' || $current_page == 'surat-tugas.php' ? 'text-accent' : '' ?>'></i> Riwayat & Laporan
-            </a>
-            <a href="inventory.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors <?= $current_page == 'inventory.php' ? 'bg-red-50 text-primary border-l-4 border-primary' : 'text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent' ?>">
-                <i class='bx bx-box text-2xl <?= $current_page == 'inventory.php' ? 'text-accent' : '' ?>'></i> Inventory
             </a>
             <a href="pengaturan.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors <?= $current_page == 'pengaturan.php' ? 'bg-red-50 text-primary border-l-4 border-primary' : 'text-gray-500 hover:bg-gray-50 hover:text-primary border-l-4 border-transparent' ?>">
                 <i class='bx bx-user-circle text-2xl <?= $current_page == 'pengaturan.php' ? 'text-accent' : '' ?>'></i> Pengaturan User

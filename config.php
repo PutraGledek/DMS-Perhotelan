@@ -39,26 +39,6 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         is_used INTEGER DEFAULT 0
     );");
-    
-    // Auto-migrasi untuk tabel Inventory
-    $pdo->exec("CREATE TABLE IF NOT EXISTS inventory_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        kode_barang TEXT UNIQUE NOT NULL,
-        nama_barang TEXT NOT NULL,
-        stok_tersedia INTEGER NOT NULL DEFAULT 0,
-        satuan TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );");
-    
-    $pdo->exec("CREATE TABLE IF NOT EXISTS inventory_usage (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        report_id INTEGER NOT NULL,
-        item_id INTEGER NOT NULL,
-        jumlah_digunakan INTEGER NOT NULL,
-        waktu_penggunaan DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (report_id) REFERENCES maintenance_reports(id_laporan) ON DELETE CASCADE,
-        FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE RESTRICT
-    );");
 } catch (PDOException $e) {
     // Hentikan eksekusi script jika database tidak ditemukan atau rusak
     die("<div style='font-family: Arial; padding: 20px; border-left: 5px solid red; background: #ffeeee;'>
@@ -91,6 +71,16 @@ function requireManager() {
     $managerRoles = ['manager_hr', 'manager_ops', 'manager_maintenance', 'gm', 'director'];
     if (!in_array($_SESSION['role'], $managerRoles)) {
         die("Akses Ditolak. Halaman ini hanya untuk level Manajemen.");
+    }
+}
+
+/**
+ * Validasi apakah user yang login adalah teknisi.
+ */
+function requireTeknisi() {
+    requireLogin();
+    if ($_SESSION['role'] !== 'teknisi') {
+        die("Akses Ditolak. Halaman ini khusus untuk Teknisi.");
     }
 }
 ?>

@@ -33,15 +33,6 @@ $stmtTech = $pdo->prepare("
 $stmtTech->execute([$id_laporan]);
 $assignment = $stmtTech->fetch();
 
-// 3. Ambil Material/Barang Digunakan
-$stmtInv = $pdo->prepare("
-    SELECT iu.*, ii.nama_barang, ii.satuan, ii.kode_barang 
-    FROM inventory_usage iu 
-    JOIN inventory_items ii ON iu.item_id = ii.id 
-    WHERE iu.report_id = ?
-");
-$stmtInv->execute([$id_laporan]);
-$inventoryUsage = $stmtInv->fetchAll();
 
 // 4. Ambil Foto Lampiran
 $stmtDoc = $pdo->prepare("SELECT * FROM documents WHERE report_id = ? ORDER BY waktu_unggah ASC");
@@ -50,7 +41,7 @@ $documents = $stmtDoc->fetchAll();
 $fotoPelapor = null;
 $fotoTeknisi = null;
 foreach ($documents as $doc) {
-    if ($doc['tipe_file'] == 'foto_masalah' && !$fotoPelapor) $fotoPelapor = $doc;
+    if ($doc['tipe_file'] == 'foto_kerusakan' && !$fotoPelapor) $fotoPelapor = $doc;
     if ($doc['tipe_file'] == 'foto_penyelesaian' && !$fotoTeknisi) $fotoTeknisi = $doc;
 }
 
@@ -187,22 +178,6 @@ require_once 'layout_header.php';
                                 </div>
                             </div>
 
-                            <!-- Inventory Usage -->
-                            <div class="col-span-2 mt-2 bg-blue-50/50 p-4 rounded-lg border border-blue-100 print-break-inside-avoid">
-                                <span class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2"><i class='bx bx-box text-blue-600'></i> Material/Barang Digunakan</span>
-                                <?php if (count($inventoryUsage) > 0): ?>
-                                    <ul class="space-y-2 text-sm text-gray-700">
-                                        <?php foreach ($inventoryUsage as $iu): ?>
-                                            <li class="flex justify-between items-center bg-white p-2.5 rounded border border-gray-200 shadow-sm">
-                                                <div class="font-medium"><?= htmlspecialchars($iu['nama_barang']) ?> <span class="text-xs text-gray-400 ml-2 font-normal">(Kode: <?= htmlspecialchars($iu['kode_barang']) ?>)</span></div>
-                                                <div class="font-bold text-gray-800"><?= $iu['jumlah_digunakan'] ?> <span class="text-xs font-normal text-gray-500"><?= htmlspecialchars($iu['satuan']) ?></span></div>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php else: ?>
-                                    <p class="text-sm text-gray-500 italic">Tidak ada material tambahan yang dicatat.</p>
-                                <?php endif; ?>
-                            </div>
 
                             <?php if ($fotoTeknisi): ?>
                             <div class="col-span-2 mt-4 print-break-inside-avoid">

@@ -12,43 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'complete') {
         $catatan = $_POST['catatan'] ?? '';
-        $qty_array = $_POST['qty'] ?? [];
-        
         $pdo->beginTransaction();
         try {
-            // Kumpulkan daftar barang yang digunakan (qty > 0)
-            $itemsToUse = [];
-            foreach ($qty_array as $id => $qty) {
-                $qty = (int)$qty;
-                if ($qty > 0) {
-                    $itemsToUse[$id] = $qty;
-                }
-            }
-
-            // Cek stok untuk semua barang sebelum memproses
-            if (!empty($itemsToUse)) {
-                $checkStmt = $pdo->prepare("SELECT nama_barang, stok_tersedia FROM inventory_items WHERE id = ?");
-                foreach ($itemsToUse as $id => $qty) {
-                    $checkStmt->execute([$id]);
-                    $itemData = $checkStmt->fetch();
-                    if (!$itemData) {
-                        throw new Exception("Barang tidak ditemukan.");
-                    }
-                    if ($itemData['stok_tersedia'] < $qty) {
-                        throw new Exception("Stok barang '{$itemData['nama_barang']}' tidak mencukupi! Diminta: {$qty}, Sisa: {$itemData['stok_tersedia']}");
-                    }
-                }
-                
-                // Proses pengurangan stok dan pencatatan
-                $updateStokStmt = $pdo->prepare("UPDATE inventory_items SET stok_tersedia = stok_tersedia - ? WHERE id = ?");
-                $insertUsageStmt = $pdo->prepare("INSERT INTO inventory_usage (report_id, item_id, jumlah_digunakan) VALUES (?, ?, ?)");
-                
-                foreach ($itemsToUse as $id => $qty) {
-                    $updateStokStmt->execute([$qty, $id]);
-                    $insertUsageStmt->execute([$report_id, $id, $qty]);
-                }
-            }
-        
             // Update laporan
             $stmt = $pdo->prepare("UPDATE maintenance_reports SET status = 'selesai', waktu_selesai = CURRENT_TIMESTAMP WHERE id_laporan = ?");
             $stmt->execute([$report_id]);
@@ -103,7 +68,7 @@ if ($_SESSION['role'] === 'teknisi') {
 }
 
 $stmt = $pdo->prepare("
-    SELECT m.*, u.nama_lengkap as pelapor, l.nama_lokasi 
+    SELECT m.*, u.nama_lengkap as pelapor, l.nama_lokasi, t.teknisi_id
     FROM maintenance_reports m 
     JOIN users u ON m.user_pelapor_id = u.id 
     JOIN locations l ON m.location_id = l.id 
@@ -114,11 +79,22 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $tickets = $stmt->fetchAll();
 
-// Ambil daftar teknisi
 $teknisiList = $pdo->query("SELECT id, nama_lengkap FROM users WHERE role = 'teknisi'")->fetchAll();
 
-// Ambil daftar barang untuk dropdown teknisi
-$inventoryItems = $pdo->query("SELECT id, nama_barang, stok_tersedia, satuan FROM inventory_items ORDER BY nama_barang ASC")->fetchAll();
+// Jika bukan teknisi (misal manager) yang sedang melihat, ubah nama di header menjadi nama teknisi pertama yang ditugaskan (jika ada tiket)
+if ($_SESSION['role'] !== 'teknisi' && count($tickets) > 0) {
+    $teknisi_id_pertama = $tickets[0]['teknisi_id'];
+    if ($teknisi_id_pertama) {
+        $stmtTek = $pdo->prepare("SELECT nama_lengkap FROM users WHERE id = ?");
+        $stmtTek->execute([$teknisi_id_pertama]);
+        $tek = $stmtTek->fetch();
+        if ($tek) {
+            $custom_name = $tek['nama_lengkap'] . " (Simulasi Teknisi)";
+            $custom_role = 'teknisi';
+        }
+    }
+}
+
 $page_title = "Maintenance - NusaDMS";
 require_once 'layout_header.php';
 ?>
@@ -200,24 +176,7 @@ require_once 'layout_header.php';
                                         <div class="space-y-4">
                                             <textarea name="catatan" required rows="2" placeholder="Catatan Teknisi (Misal: Bohlam telah diganti)..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-all"></textarea>
                                             
-                                            <!-- Pilihan Barang / Stok (Multiple) -->
-                                            <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                                                <label class="text-xs font-semibold text-gray-600 block mb-3 border-b border-blue-200 pb-2">Barang Digunakan (Isi jumlah pada barang yang dipakai)</label>
-                                                <div class="max-h-48 overflow-y-auto pr-2 space-y-2">
-                                                    <?php foreach ($inventoryItems as $inv): ?>
-                                                        <div class="flex items-center justify-between bg-white p-2 border border-gray-200 rounded shadow-sm">
-                                                            <div class="flex-1">
-                                                                <div class="text-sm font-medium text-gray-800"><?= htmlspecialchars($inv['nama_barang']) ?></div>
-                                                                <div class="text-xs text-gray-500">Sisa stok: <span class="font-bold <?= $inv['stok_tersedia'] > 0 ? 'text-green-600' : 'text-red-500' ?>"><?= $inv['stok_tersedia'] ?></span> <?= htmlspecialchars($inv['satuan']) ?></div>
-                                                            </div>
-                                                            <div class="w-20 shrink-0 ml-3">
-                                                                <input type="number" name="qty[<?= $inv['id'] ?>]" min="0" max="<?= $inv['stok_tersedia'] ?>" placeholder="Qty" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-center focus:border-primary focus:outline-none <?= $inv['stok_tersedia'] == 0 ? 'bg-gray-100 cursor-not-allowed' : 'bg-white' ?>" <?= $inv['stok_tersedia'] == 0 ? 'disabled' : '' ?>>
-                                                            </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                            
+
                                             <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
                                                 <div class="flex-1 w-full relative">
                                                     <input type="file" name="bukti_foto" id="foto_<?= $ticket['id_laporan'] ?>" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="this.nextElementSibling.innerHTML = '<i class=\'bx bx-check-circle text-xl text-green-500\'></i> Foto Dipilih'">

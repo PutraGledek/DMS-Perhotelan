@@ -62,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Ambil daftar tiket aktif
 $stmt = $pdo->query("
-    SELECT m.*, u.nama_lengkap as pelapor, l.nama_lokasi, t.teknisi_id, ut.nama_lengkap as nama_teknisi 
+    SELECT m.*, u.nama_lengkap as pelapor, l.nama_lokasi, t.teknisi_id, ut.nama_lengkap as nama_teknisi,
+           (SELECT path_penyimpanan FROM documents WHERE report_id = m.id_laporan AND tipe_file = 'foto_kerusakan' ORDER BY id_dokumen DESC LIMIT 1) as foto_kerusakan
     FROM maintenance_reports m 
     JOIN users u ON m.user_pelapor_id = u.id 
     JOIN locations l ON m.location_id = l.id 
@@ -76,8 +77,7 @@ $tickets = $stmt->fetchAll();
 // Ambil daftar teknisi
 $teknisiList = $pdo->query("SELECT id, nama_lengkap FROM users WHERE role = 'teknisi'")->fetchAll();
 
-// Ambil daftar barang untuk dropdown teknisi
-$inventoryItems = $pdo->query("SELECT id, nama_barang, stok_tersedia, satuan FROM inventory_items ORDER BY nama_barang ASC")->fetchAll();
+
 $page_title = "Penugasan - NusaDMS";
 require_once 'layout_header.php';
 ?>
@@ -147,9 +147,18 @@ require_once 'layout_header.php';
                                             <span class="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded <?= $urgensiColor ?> uppercase">Urgensi: <?= htmlspecialchars($ticket['tingkat_prioritas']) ?></span>
                                         </div>
                                     </div>
-                                    <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4">
-                                        "<?= htmlspecialchars($ticket['deskripsi']) ?>"
-                                    </p>
+                                    <div class="flex flex-col md:flex-row gap-4 mb-4 mt-2">
+                                        <?php if (!empty($ticket['foto_kerusakan'])): ?>
+                                            <div class="w-full md:w-48 shrink-0 relative rounded-xl overflow-hidden shadow-sm border border-gray-200">
+                                                <a href="<?= htmlspecialchars($ticket['foto_kerusakan']) ?>" target="_blank" title="Klik untuk memperbesar">
+                                                    <img src="<?= htmlspecialchars($ticket['foto_kerusakan']) ?>" alt="Foto Bukti" class="w-full h-32 object-cover hover:scale-105 transition-transform duration-300">
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                        <p class="text-sm text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-200 flex-1">
+                                            "<?= htmlspecialchars($ticket['deskripsi']) ?>"
+                                        </p>
+                                    </div>
                                 </div>
                                 
                                 <?php if ($ticket['status'] === 'menunggu_approval'): ?>

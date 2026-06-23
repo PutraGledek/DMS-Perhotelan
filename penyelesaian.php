@@ -21,31 +21,6 @@ require_once 'layout_header.php';
                             <textarea required rows="3" placeholder="Jelaskan secara detail tindakan yang telah dilakukan (Contoh: Telah dilakukan pembersihan filter AC dan isi freon)..." class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-red-100 transition-all"></textarea>
                         </div>
 
-                        <!-- Integrasi Stok (Inventory Link) -->
-                        <div class="space-y-3 md:col-span-2 mt-2 bg-gray-50 p-5 rounded-xl border border-gray-200">
-                            <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class='bx bx-box text-primary'></i> Material/Barang yang Digunakan (Integrasi Stok)</h4>
-                            <div class="flex flex-col sm:flex-row gap-4 items-end">
-                                <div class="flex-1 w-full">
-                                    <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Barang</label>
-                                    <select class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary focus:outline-none bg-white">
-                                        <option>-- Pilih Material --</option>
-                                        <option>Freon R32</option>
-                                        <option>Bohlam LED 15W</option>
-                                        <option>Sprei King Size</option>
-                                        <option>Bantal Kepala</option>
-                                    </select>
-                                </div>
-                                <div class="w-24 shrink-0">
-                                    <label class="text-xs font-semibold text-gray-600 block mb-1">Jumlah</label>
-                                    <input type="number" value="1" min="1" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary focus:outline-none bg-white">
-                                </div>
-                                <div class="w-32 shrink-0">
-                                    <label class="text-xs font-semibold text-gray-600 block mb-1">Satuan</label>
-                                    <input type="text" value="Unit" disabled class="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-500">
-                                </div>
-                                <button type="button" class="px-4 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-hover shadow-sm"><i class='bx bx-plus text-lg'></i></button>
-                            </div>
-                        </div>
 
                         <!-- Versioning Foto Area -->
                         <div class="space-y-2 md:col-span-2 mt-4">

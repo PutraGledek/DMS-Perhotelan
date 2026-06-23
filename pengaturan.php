@@ -40,7 +40,6 @@ require_once 'layout_header.php';
 
             <div class="flex gap-4 mb-8 border-b border-gray-200 overflow-x-auto whitespace-nowrap hide-scrollbar">
                 <a href="pengaturan.php" class="px-4 py-3 text-sm font-bold text-primary border-b-2 border-primary">Manajemen User</a>
-                <a href="inventory.php" class="px-4 py-3 text-sm font-semibold text-gray-500 hover:text-primary transition-colors">Manajemen Stok Barang</a>
             </div>
 
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
