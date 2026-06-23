@@ -79,7 +79,7 @@ $user_initial = strtoupper(substr($user_name, 0, 1));
         </nav>
         <!-- Logout button at bottom of sidebar -->
         <div class="p-4 border-t border-gray-200">
-            <a href="login.php" onclick="return confirm('Apakah Anda yakin ingin keluar?')" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-red-600 hover:bg-red-50">
+            <a href="logout.php" onclick="return confirm('Apakah Anda yakin ingin keluar?')" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors text-red-600 hover:bg-red-50">
                 <i class='bx bx-log-out text-2xl'></i> Keluar
             </a>
         </div>
